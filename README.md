@@ -1,194 +1,309 @@
-# Car & Spare Parts Marketplace API
-A RESTful API built with Django REST Framework for a car and spare parts marketplace.
-Users can register, authenticate, and manage listings for cars and spare parts.
+# Auto Marketplace API
+A production-ready RESTful API for a **car and spare parts marketplace**, built with Django REST Framework.
 
-# Tech Stack
-- Python 3
-- Django
-- Django REST Framework
-- SimpleJWT
-- django-filter
-- SQLite (development)
+# Table of Contents
+1. [Features](#features)
+2. [Tech Stack](#tech-stack)
+3. [Project Structure](#project-structure)
+4. [Local Setup](#local-setup)
+5. [Environment Variables](#environment-variables)
+6. [API Endpoints](#api-endpoints)
+7. [Search, Filter & Sort](#search-filter--sort)
+8. [Example Requests](#example-requests)
+9. [Running Tests](#running-tests)
+10. [Deployment — Railway](#deployment--railway)
+11. [Deployment — PythonAnywhere](#deployment--pythonanywhere)
 
-# Prerequisites
-- Python 3.8+
-- pip
-- Git
+## Features
 
-# Setup & Installation
+- User registration with password confirmation and email uniqueness check
+- JWT login, token refresh, and logout (token blacklisting)
+- Full CRUD for car and spare part listings
+- Owner-only protection — only the listing owner can edit or delete
+- Paginated responses (10 per page)
+- Search by name, brand, or description
+- Filter by category, brand, price range, year range, and owner username
+- Sort by date, price, year, or name
+- `/api/products/my_listings/` — see only your own listings
+- Production-ready — environment variables, PostgreSQL support, CORS, WhiteNoise
 
-# STEP 1 — Clone & Enter Project
+## Tech Stack
+| Layer | Technology |
+|---|---|
+| Framework | Django 6.0 + Django REST Framework |
+| Authentication | SimpleJWT (access + refresh tokens) |
+| Filtering | django-filter + SearchFilter + OrderingFilter |
+| Database | SQLite (dev) / PostgreSQL (production) |
+| Static Files | WhiteNoise |
+| CORS | django-cors-headers |
+| Environment | python-decouple |
+| Deployment | Railway / PythonAnywhere |
+
+---
+
+## Project Structure
+```
+auto-marketplace-api/
+├── config/
+│   ├── settings.py       # All settings — reads from .env
+│   ├── urls.py           # Root URL configuration
+│   └── wsgi.py
+├── users/
+│   ├── serializers.py    # Register + profile serializers with validation
+│   ├── views.py          # RegisterView, UserProfileView
+│   └── urls.py
+├── products/
+│   ├── models.py         # Product model
+│   ├── serializers.py    # ProductSerializer with full validation
+│   ├── views.py          # ProductViewSet + my_listings action
+│   ├── filters.py        # Filter by category, brand, price, year, owner
+│   ├── permissions.py    # IsOwnerOrReadOnly
+│   ├── tests.py          # Full test suite (21 tests)
+│   └── urls.py
+├── .env.example          # Template — copy to .env and fill in values
+├── requirements.txt
+├── Procfile              # For Railway deployment
+└── runtime.txt           # Pins Python version for deployment
+```
+
+## Local Setup
+### 1. Clone the repository
 ```bash
-git clone https://github.com/yourusername/auto-marketplace-api.git
+git clone https://github.com/greatkapule/auto-marketplace-api.git
 cd auto-marketplace-api
 ```
 
-# STEP 2 — Setup Virtual Environment
+### 2. Create a virtual environment
 ```bash
 python3 -m venv venv
-source venv/bin/activate
+source venv/bin/activate        # Mac/Linux
+venv\Scripts\activate           # Windows
 ```
 
-# STEP 3 — Install Dependencies
+### 3. Install dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-# STEP 4 — Run Migrations
+### 4. Set up environment variables
 ```bash
-python manage.py makemigrations
+cp .env.example .env
+```
+Open `.env` and set at minimum:
+```
+SECRET_KEY=your-long-random-secret-key
+DEBUG=True
+```
+
+### 5. Run migrations
+```bash
 python manage.py migrate
 ```
 
-# STEP 5 — Create Superuser
+### 6. Collect static files
+```bash
+python manage.py collectstatic --noinput
+```
+
+### 7. Create an admin account (optional)
 ```bash
 python manage.py createsuperuser
 ```
 
-# STEP 6 — Run the Server
+### 8. Start the server
 ```bash
 python manage.py runserver
 ```
 
-Visit: `http://127.0.0.1:8000/`
+API is live at **http://127.0.0.1:8000/**
 
+---
 
-# Features
+## Environment Variables
+Copy `.env.example` to `.env` and fill in these values:
 
-- User registration with password validation
-- JWT authentication with token refresh
-- User profile endpoint
-- Full CRUD for car and spare part listings
-- Owner-only edit and delete protection
-- Search by name, brand, and year of manufacture
-- Filter by category, price range, and year range
-- Order by date, price, and year
-- Public read access for all listings
-
-# API Endpoints
-
-# Authentication & Users
-| Method | Endpoint | Description | Access |
-|---|---|---|---|
-| POST | `/api/users/register/` | Register a new user | Public |
-| POST | `/api/token/` | Obtain JWT access token | Public |
-| POST | `/api/token/refresh/` | Refresh JWT token | Public |
-| GET | `/api/users/profile/` | Get authenticated user profile | Authenticated |
-
-# Products
-| Method | Endpoint | Description | Access |
-|---|---|---|---|
-| GET | `/api/products/` | List all products | Public |
-| GET | `/api/products/{id}/` | Retrieve a single product | Public |
-| POST | `/api/products/` | Create a new product | Authenticated |
-| PUT | `/api/products/{id}/` | Update a product | Owner only |
-| DELETE | `/api/products/{id}/` | Delete a product | Owner only |
-
-# Search, Filtering & Ordering
-| Query Parameter | Example | Description |
+| Variable | Description | Example |
 |---|---|---|
-| `search` | `?search=toyota` | Search by name, brand or year |
-| `category` | `?category=car` | Filter by category |
-| `min_price` | `?min_price=1000` | Filter by minimum price |
-| `max_price` | `?max_price=5000` | Filter by maximum price |
-| `min_year` | `?min_year=2018` | Filter by minimum year |
-| `max_year` | `?max_year=2022` | Filter by maximum year |
-| `ordering` | `?ordering=-created_at` | Order results (prefix `-` for descending) |
+| `SECRET_KEY` | Django secret key (keep secret!) | `abc123xyz...` |
+| `DEBUG` | `True` for dev, `False` for production | `True` |
+| `ALLOWED_HOSTS` | Comma-separated allowed domains | `127.0.0.1,localhost` |
+| `DATABASE_URL` | PostgreSQL URL — leave blank for SQLite | `postgresql://...` |
+| `CORS_ALLOWED_ORIGINS` | Allowed frontend origins | `http://localhost:3000` |
+
+Generate a secure secret key:
+```bash
+python manage.py shell -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+```
+
+---
+
+## API Endpoints
+### Authentication
+
+| Method | Endpoint | Description | Access |
+|---|---|---|---|
+| POST | `/api/token/` | Login — returns access + refresh tokens | Public |
+| POST | `/api/token/refresh/` | Get new access token | Public |
+| POST | `/api/token/blacklist/` | Logout — invalidates refresh token | Public |
+
+### Users
+
+| Method | Endpoint | Description | Access |
+|---|---|---|---|
+| POST | `/api/users/register/` | Create a new account | Public |
+| GET | `/api/users/profile/` | View profile + listing count | 🔒 Login required |
+| PATCH | `/api/users/profile/` | Update your email | 🔒 Login required |
+
+### Products
+
+| Method | Endpoint | Description | Access |
+|---|---|---|---|
+| GET | `/api/products/` | List all products (paginated) | Public |
+| POST | `/api/products/` | Create a listing | 🔒 Login required |
+| GET | `/api/products/{id}/` | View one product | Public |
+| PUT | `/api/products/{id}/` | Replace a product | 🔑 Owner only |
+| PATCH | `/api/products/{id}/` | Partially update | 🔑 Owner only |
+| DELETE | `/api/products/{id}/` | Delete a product | 🔑 Owner only |
+| GET | `/api/products/my_listings/` | Your own listings | 🔒 Login required |
 
 
-# Example Usage with curl
+## Search, Filter & Sort
 
-# Register a user
+All parameters work on `GET /api/products/` and can be combined freely.
+
+### Filter Parameters
+
+| Parameter | Example | Description |
+|---|---|---|
+| `category` | `?category=car` | Filter by `car` or `spare_part` |
+| `brand` | `?brand=toyota` | Partial, case-insensitive brand match |
+| `owner` | `?owner=john` | All listings by username "john" |
+| `min_price` | `?min_price=1000` | Price at least 1000 |
+| `max_price` | `?max_price=5000` | Price at most 5000 |
+| `min_year` | `?min_year=2018` | Year 2018 or newer |
+| `max_year` | `?max_year=2022` | Year 2022 or older |
+
+### Search
+`?search=term` — searches across **name**, **brand**, and **description**.
+
+### Ordering
+`?ordering=field` — prefix with `-` for descending.
+
+| Value | Result |
+|---|---|
+| `?ordering=-created_at` | Newest first (default) |
+| `?ordering=price` | Cheapest first |
+| `?ordering=-price` | Most expensive first |
+| `?ordering=-year` | Newest year first |
+
+### Combined example
+```
+GET /api/products/?category=car&min_year=2018&max_price=20000&ordering=-price
+```
+
+## Example Requests
+### Register
 ```bash
 curl -X POST http://127.0.0.1:8000/api/users/register/ \
   -H "Content-Type: application/json" \
-  -d '{"username": "edwin", "email": "edwin@email.com", "password": "StrongPass123!"}'
+  -d '{
+    "username": "john",
+    "email": "john@example.com",
+    "password": "StrongPass123!",
+    "password_confirm": "StrongPass123!"
+  }'
 ```
 
-# Get JWT token
+### Login
 ```bash
 curl -X POST http://127.0.0.1:8000/api/token/ \
   -H "Content-Type: application/json" \
-  -d '{"username": "edwin", "password": "StrongPass123!"}'
+  -d '{"username": "john", "password": "StrongPass123!"}'
 ```
 
-# Refresh token
-```bash
-curl -X POST http://127.0.0.1:8000/api/token/refresh/ \
-  -H "Content-Type: application/json" \
-  -d '{"refresh": "YOUR_REFRESH_TOKEN"}'
-```
-
-# View your profile
-```bash
-curl "http://127.0.0.1:8000/api/users/profile/" \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
-```
-
-# Create a product
+### Create a listing
 ```bash
 curl -X POST http://127.0.0.1:8000/api/products/ \
-  -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
   -d '{
     "name": "Toyota Corolla",
     "category": "car",
     "brand": "Toyota",
     "price": "15000.00",
-    "description": "Clean 2020 Toyota Corolla",
+    "description": "Low mileage, excellent condition",
     "year": 2020
   }'
 ```
 
-# Search and filter
+### View your own listings
 ```bash
-# Search by name, brand or year
-curl "http://127.0.0.1:8000/api/products/?search=toyota"
-curl "http://127.0.0.1:8000/api/products/?search=2020"
-
-# Filter by category
-curl "http://127.0.0.1:8000/api/products/?category=car"
-
-# Filter by price range
-curl "http://127.0.0.1:8000/api/products/?min_price=1000&max_price=5000"
-
-# Filter by year range
-curl "http://127.0.0.1:8000/api/products/?min_year=2018&max_year=2022"
-
-# Combined filters
-curl "http://127.0.0.1:8000/api/products/?category=car&min_year=2018&max_year=2022"
-
-# Order by newest
-curl "http://127.0.0.1:8000/api/products/?ordering=-created_at"
+curl http://127.0.0.1:8000/api/products/my_listings/ \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
 ```
 
-
-# Authorization Rules
-
-- Public users can view all products
-- Authenticated users can create products
-- Only the product owner can update or delete their listing
-- Authentication uses JWT Bearer tokens
-
-
-# Project Structure
+### Logout
+```bash
+curl -X POST http://127.0.0.1:8000/api/token/blacklist/ \
+  -H "Content-Type: application/json" \
+  -d '{"refresh": "YOUR_REFRESH_TOKEN"}'
 ```
-auto-marketplace-api/
-├── config/
-│   ├── settings.py
-│   ├── urls.py
-│   └── wsgi.py
-├── users/
-│   ├── serializers.py
-│   ├── views.py
-│   └── urls.py
-├── products/
-│   ├── models.py
-│   ├── serializers.py
-│   ├── views.py
-│   ├── urls.py
-│   ├── permissions.py
-│   └── filters.py
-├── requirements.txt
-└── README.md
+
+---
+
+## Running Tests
+```bash
+# Run all 21 tests
+python manage.py test --verbosity 2
+
+# Run only product tests
+python manage.py test products --verbosity 2
+
+# Run only user tests
+python manage.py test users --verbosity 2
 ```
+
+---
+
+## Deployment — Railway
+
+### 1. Push your code to GitHub
+```bash
+git add .
+git commit -m "Ready for deployment"
+git push origin main
+```
+
+### 2. Sign up at railway.app
+Go to https://railway.app and log in with GitHub.
+
+### 3. Create a new project
+Click **New Project → Deploy from GitHub repo** → select `auto-marketplace-api`.
+
+### 4. Add PostgreSQL
+Click **+ New → Database → Add PostgreSQL**.
+Railway sets `DATABASE_URL` automatically.
+
+### 5. Set environment variables
+Go to your service → **Variables** tab and add:
+
+| Variable | Value |
+|---|---|
+| `SECRET_KEY` | your generated secret key |
+| `DEBUG` | `False` |
+| `ALLOWED_HOSTS` | `your-app.railway.app` |
+| `CORS_ALLOWED_ORIGINS` | `https://your-app.railway.app` |
+
+### 6. Redeploy
+Go to **Deployments** tab → click the latest → **Redeploy**.
+
+### 7. Run migrations
+Open the Railway terminal and run:
+```bash
+python manage.py migrate
+python manage.py createsuperuser
+```
+
+Your API is live at `https://your-app.railway.app` 🚀
+
+---
