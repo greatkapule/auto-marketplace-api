@@ -8,14 +8,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-me')
-# On Railway, set DEBUG to False in Variables
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-# Railway sets a RAILWAY_PUBLIC_DOMAIN variable automatically. 
-# We combine it with your manual list to prevent 400 Bad Request errors.
+# ALLOWED HOSTS 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='127.0.0.1,localhost', cast=Csv())
 RAILWAY_DOMAIN = os.environ.get("RAILWAY_PUBLIC_DOMAIN")
-if RAILWAY_DOMAIN:
+if RAILWAY_DOMAIN and RAILWAY_DOMAIN not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append(RAILWAY_DOMAIN)
 
 CSRF_TRUSTED_ORIGINS = config(
@@ -69,15 +67,25 @@ TEMPLATES = [{
 }]
 
 # DATABASE
-# Optimization: This logic checks if DATABASE_URL exists (Railway provides this).
-# If it doesn't, it falls back to SQLite for local development.
-DATABASES = {
-    'default': dj_database_url.config(
-        default=config('DATABASE_URL', default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}"),
-        conn_max_age=600,
-        conn_health_checks=True,
-    )
-}
+# This ensures that even if the env var is missing, Django has a valid ENGINE.
+DATABASE_URL = config('DATABASE_URL', default=None)
+
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,
+            conn_health_checks=True,
+            ssl_require=True # Railway Postgres usually requires SSL for public URLs
+        )
+    }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # PASSWORD VALIDATION 
 AUTH_PASSWORD_VALIDATORS = [
