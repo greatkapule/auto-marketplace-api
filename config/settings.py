@@ -16,11 +16,20 @@ RAILWAY_DOMAIN = os.environ.get("RAILWAY_PUBLIC_DOMAIN")
 if RAILWAY_DOMAIN and RAILWAY_DOMAIN not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append(RAILWAY_DOMAIN)
 
+# CSRF TRUSTED ORIGINS
 CSRF_TRUSTED_ORIGINS = config(
     'CSRF_TRUSTED_ORIGINS', 
     default='http://localhost:3000,http://127.0.0.1:3000', 
     cast=Csv()
 )
+
+# RAILWAY PROXY SETTINGS
+# This tells Django it's behind a secure proxy so it can trust the HTTPS connection.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+# Optional: Use True if you want to force all traffic to HTTPS
+SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=False, cast=bool)
 
 # APPLICATIONS 
 INSTALLED_APPS = [
@@ -67,7 +76,6 @@ TEMPLATES = [{
 }]
 
 # DATABASE
-# This ensures that even if the env var is missing, Django has a valid ENGINE.
 DATABASE_URL = config('DATABASE_URL', default=None)
 
 if DATABASE_URL:
@@ -76,7 +84,7 @@ if DATABASE_URL:
             default=DATABASE_URL,
             conn_max_age=600,
             conn_health_checks=True,
-            ssl_require=True # Railway Postgres usually requires SSL for public URLs
+            ssl_require=True
         )
     }
 else:
@@ -105,7 +113,6 @@ USE_TZ        = True
 STATIC_URL  = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# WhiteNoise 6.0+ settings
 STORAGES = {
     "default": {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
@@ -142,7 +149,7 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
-#  CORS
+# CORS
 CORS_ALLOWED_ORIGINS = config(
     'CORS_ALLOWED_ORIGINS',
     default='http://localhost:3000,http://127.0.0.1:3000',
