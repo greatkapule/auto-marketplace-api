@@ -1,6 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import User
-
+from django.conf import settings 
 
 class Product(models.Model):
     """
@@ -13,7 +12,12 @@ class Product(models.Model):
         ('spare_part', 'Spare Part'),
     )
 
-    owner       = models.ForeignKey(User, on_delete=models.CASCADE, related_name='products')
+    # Change User to settings.AUTH_USER_MODEL
+    owner       = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.CASCADE, 
+        related_name='products'
+    )
     name        = models.CharField(max_length=255)
     category    = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
     brand       = models.CharField(max_length=100)
@@ -24,7 +28,7 @@ class Product(models.Model):
     updated_at  = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['-created_at']   # newest first everywhere by default
+        ordering = ['-created_at']
 
     def __str__(self):
         return f"{self.brand} {self.name} ({self.year or 'N/A'})"
