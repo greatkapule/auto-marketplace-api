@@ -2,13 +2,27 @@ from pathlib import Path
 from datetime import timedelta
 import dj_database_url    
 from decouple import config, Csv
+import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY 
-SECRET_KEY    = config('SECRET_KEY', default='django-insecure-change-me')
-DEBUG         = config('DEBUG', default=True, cast=bool)
+# SECURITY
+SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-me')
+# On Railway, set DEBUG to False in Variables
+DEBUG = config('DEBUG', default=False, cast=bool)
+
+# Railway sets a RAILWAY_PUBLIC_DOMAIN variable automatically. 
+# We combine it with your manual list to prevent 400 Bad Request errors.
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='127.0.0.1,localhost', cast=Csv())
+RAILWAY_DOMAIN = os.environ.get("RAILWAY_PUBLIC_DOMAIN")
+if RAILWAY_DOMAIN:
+    ALLOWED_HOSTS.append(RAILWAY_DOMAIN)
+
+CSRF_TRUSTED_ORIGINS = config(
+    'CSRF_TRUSTED_ORIGINS', 
+    default='http://localhost:3000,http://127.0.0.1:3000', 
+    cast=Csv()
+)
 
 # APPLICATIONS 
 INSTALLED_APPS = [
@@ -27,10 +41,10 @@ INSTALLED_APPS = [
     'products',
 ]
 
-# MIDDLEWARE 
+# MIDDLEWARE
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware', 
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -54,11 +68,14 @@ TEMPLATES = [{
     ]},
 }]
 
-# DATABASE 
+# DATABASE
+# Optimization: This logic checks if DATABASE_URL exists (Railway provides this).
+# If it doesn't, it falls back to SQLite for local development.
 DATABASES = {
     'default': dj_database_url.config(
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+        default=config('DATABASE_URL', default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}"),
         conn_max_age=600,
+        conn_health_checks=True,
     )
 }
 
@@ -79,11 +96,20 @@ USE_TZ        = True
 # STATIC FILES 
 STATIC_URL  = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# WhiteNoise 6.0+ settings
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# DJANGO REST FRAMEWORK 
+# REST FRAMEWORK & JWT 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -100,16 +126,15 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 10,
 }
 
-# JWT 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME':    timedelta(minutes=60),
-    'REFRESH_TOKEN_LIFETIME':   timedelta(days=7),
-    'ROTATE_REFRESH_TOKENS':    True,
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
-    'AUTH_HEADER_TYPES':        ('Bearer',),
+    'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
-# CORS 
+#  CORS
 CORS_ALLOWED_ORIGINS = config(
     'CORS_ALLOWED_ORIGINS',
     default='http://localhost:3000,http://127.0.0.1:3000',
