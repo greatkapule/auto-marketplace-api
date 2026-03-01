@@ -6,32 +6,41 @@ import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY
+# SECURITY 
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-me')
 DEBUG = config('DEBUG', default=False, cast=bool)
 
 # ALLOWED HOSTS 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='127.0.0.1,localhost', cast=Csv())
+
+# Extract Railway Domain
 RAILWAY_DOMAIN = os.environ.get("RAILWAY_PUBLIC_DOMAIN")
-if RAILWAY_DOMAIN and RAILWAY_DOMAIN not in ALLOWED_HOSTS:
-    ALLOWED_HOSTS.append(RAILWAY_DOMAIN)
+if RAILWAY_DOMAIN:
+    if RAILWAY_DOMAIN not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(RAILWAY_DOMAIN)
+    # Ensure the specific app production URL is also trusted
+    ALLOWED_HOSTS.append('auto-marketplace-api-production.up.railway.app')
 
 # CSRF TRUSTED ORIGINS
+# This is critical for Admin Login on Railway
 CSRF_TRUSTED_ORIGINS = config(
     'CSRF_TRUSTED_ORIGINS', 
     default='http://localhost:3000,http://127.0.0.1:3000', 
     cast=Csv()
 )
 
+if RAILWAY_DOMAIN:
+    CSRF_TRUSTED_ORIGINS.append(f"https://{RAILWAY_DOMAIN}")
+    CSRF_TRUSTED_ORIGINS.append("https://auto-marketplace-api-production.up.railway.app")
+
 # RAILWAY PROXY SETTINGS
-# This tells Django it's behind a secure proxy so it can trust the HTTPS connection.
+# Tells Django it's behind a secure proxy so it can trust the HTTPS connection
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
-# Optional: Use True if you want to force all traffic to HTTPS
 SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=False, cast=bool)
 
-# APPLICATIONS 
+# APPLICATIONS
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -48,7 +57,7 @@ INSTALLED_APPS = [
     'products',
 ]
 
-# MIDDLEWARE
+# MIDDLEWARE 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware', 
@@ -75,7 +84,7 @@ TEMPLATES = [{
     ]},
 }]
 
-# DATABASE
+# DATABASE 
 DATABASE_URL = config('DATABASE_URL', default=None)
 
 if DATABASE_URL:
@@ -95,7 +104,7 @@ else:
         }
     }
 
-# PASSWORD VALIDATION 
+# PASSWORD VALIDATION
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -149,11 +158,12 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
-# CORS
+# CORS 
 CORS_ALLOWED_ORIGINS = config(
     'CORS_ALLOWED_ORIGINS',
     default='http://localhost:3000,http://127.0.0.1:3000',
     cast=Csv()
 )
 
+# CUSTOM USER MODEL
 AUTH_USER_MODEL = 'users.User'
