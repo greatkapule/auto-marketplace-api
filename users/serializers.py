@@ -1,7 +1,9 @@
 from django.contrib.auth.password_validation import validate_password as django_validate_password
 from rest_framework import serializers
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model 
 
+# This ensures we use the 'users.User' model defined in your settings
+User = get_user_model()
 
 class RegisterSerializer(serializers.ModelSerializer):
     password         = serializers.CharField(write_only=True, min_length=8)
@@ -54,4 +56,5 @@ class UserProfileSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'username', 'date_joined']
 
     def get_listing_count(self, obj):
+        # Ensure your Product model has a related_name='products' on the owner field
         return obj.products.count()

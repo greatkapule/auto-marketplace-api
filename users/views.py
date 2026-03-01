@@ -2,9 +2,11 @@ from rest_framework import generics, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model  
 from .serializers import RegisterSerializer, UserProfileSerializer
 
+# This dynamically gets your 'users.User' model defined in settings.py
+User = get_user_model()
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -22,7 +24,6 @@ class RegisterView(generics.CreateAPIView):
             },
             status=status.HTTP_201_CREATED
         )
-
 
 class UserProfileView(APIView):
     permission_classes = [IsAuthenticated]
