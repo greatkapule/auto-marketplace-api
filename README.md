@@ -304,6 +304,7 @@ python manage.py migrate
 python manage.py createsuperuser
 ```
 
-Your API is live at `https://your-app.railway.app` 🚀
+Live API Endpoint: https://auto-marketplace-api-production.up.railway.app/api/
 
+Admin Panel: https://auto-marketplace-api-production.up.railway.app/admin/
 ---
